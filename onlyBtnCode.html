@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>扫一扫</title>
+    <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.2.1/html5-qrcode.min.js"></script>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            flex-direction: column;
+        }
+        #scanBtn {
+            font-size: 18px;
+            padding: 10px 20px;
+            cursor: pointer;
+        }
+        #qr-reader {
+            width: 100%;
+            max-width: 320px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+<button id="scanBtn">📷 扫一扫</button>
+<div id="qr-reader"></div>
+<script>
+    let scanner = null;
+
+    document.getElementById("scanBtn").addEventListener("click", function () {
+        document.getElementById("scanBtn").style.display = "none";
+        document.getElementById("qr-reader").style.display = "block";
+
+        let qrBoxSize = window.innerWidth < 600 ? 200 : 250;
+        scanner = new Html5QrcodeScanner("qr-reader", { fps: 10, qrbox: qrBoxSize });
+
+        scanner.render(
+            function (decodedText) {
+                alert("扫描成功：" + decodedText);
+                stopScan();
+            },
+            function (error) {
+                console.warn(error);
+            }
+        );
+    });
+
+    function stopScan() {
+        if (scanner) {
+            scanner.clear();
+            document.getElementById("qr-reader").style.display = "none";
+            document.getElementById("scanBtn").style.display = "block";
+        }
+    }
+</script>
+</body>
+</html>
