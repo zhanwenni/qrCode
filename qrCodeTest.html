@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>H5 扫码测试</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.2.1/html5-qrcode.min.js"></script>
+
+    <style>
+        #qr-reader {
+            width: 100%;
+            max-width: 320px;
+            margin: auto;
+            display: none;
+        }
+        #loading {
+            display: none;
+            text-align: center;
+            margin-top: 10px;
+            font-size: 14px;
+            color: gray;
+        }
+    </style>
+</head>
+<body>
+<button id="scanBtn">📷 扫描二维码</button>
+<div id="loading">正在打开摄像头，请稍候...</div>
+<div id="qr-reader"></div>
+<p>扫描结果：<span id="qr-result"></span></p>
+
+<script>
+    let scanner = null;
+    let isScanning = false; // 避免重复点击
+
+    document.getElementById("scanBtn").addEventListener("click", function () {
+        if (isScanning) return; // 避免重复点击
+        isScanning = true;
+
+        document.getElementById("loading").style.display = "block"; // 显示加载提示
+        document.getElementById("qr-reader").style.display = "block";
+
+        // 适配不同屏幕
+        let qrBoxSize = window.innerWidth < 600 ? 200 : 250;
+
+        if (!scanner) {
+            scanner = new Html5QrcodeScanner("qr-reader", {
+                fps: 10,
+                qrbox: qrBoxSize
+            });
+        }
+
+        scanner.render(
+            function (decodedText, decodedResult) {
+                document.getElementById("qr-result").innerText = decodedText;
+                alert("扫描成功：" + decodedText);
+                stopScan(); // 扫码成功后自动关闭
+            },
+            function (error) {
+                console.warn(error);
+            }
+        );
+
+        document.getElementById("loading").style.display = "none"; // 隐藏加载提示
+    });
+
+    function stopScan() {
+        if (scanner) {
+            scanner.clear(); // 停止扫描
+            document.getElementById("qr-reader").style.display = "none";
+            isScanning = false;
+        }
+    }
+
+    window.onload = function () {
+        if (typeof Html5QrcodeScanner === "undefined") {
+            alert("二维码扫描库加载失败，请检查网络或尝试刷新页面！");
+        }
+    };
+
+</script>
+</body>
+</html>
