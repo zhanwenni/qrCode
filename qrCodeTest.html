@@ -105,7 +105,9 @@
     window.onload = function () {
         if (typeof Html5Qrcode === "undefined") {
             alert("二维码扫描库加载失败，请检查网络或刷新页面！");
+            return;
         }
+        scanBtn.click();  // 模拟点击按钮
     };
 </script>
 
