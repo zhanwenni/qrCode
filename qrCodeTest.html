@@ -69,6 +69,13 @@
             function (decodedText) {
                 alert("扫描成功：" + decodedText);
                 stopScan();
+
+                // 检查扫描结果是否是 URL
+                if (isValidUrl(decodedText)) {
+                    window.location.href = decodedText; // 直接跳转
+                } else {
+                    alert("扫描成功：" + decodedText); // 非 URL 则显示结果
+                }
             },
             function (error) {
                 console.warn(error);
@@ -109,6 +116,16 @@
         }
         scanBtn.click();  // 模拟点击按钮
     };
+
+    // 检查字符串是否是有效的 URL
+    function isValidUrl(string) {
+        try {
+            new URL(string); // 尝试解析 URL
+            return true;
+        } catch (_) {
+            return false;
+        }
+    }
 </script>
 
 </body>
