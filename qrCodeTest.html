@@ -72,8 +72,10 @@
 
                 // 检查扫描结果是否是 URL
                 if (isValidUrl(decodedText)) {
+                    alert("解析成功");
                     window.location.href = decodedText; // 直接跳转
                 } else {
+                    alert("解析失败");
                     alert("扫描成功：" + decodedText); // 非 URL 则显示结果
                 }
             },
