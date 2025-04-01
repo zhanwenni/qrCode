@@ -70,12 +70,12 @@
                 alert("扫描成功：" + decodedText);
                 stopScan();
 
-                // 检查扫描结果是否是 URL
-                if (isValidUrl(decodedText)) {
-                    window.location.href = decodedText; // 直接跳转
-                } else {
-                    alert("扫描成功：" + decodedText); // 非 URL 则显示结果
-                }
+                // // 检查扫描结果是否是 URL
+                // if (isValidUrl(decodedText)) {
+                //     window.location.href = decodedText; // 直接跳转
+                // } else {
+                //     alert("扫描成功：" + decodedText); // 非 URL 则显示结果
+                // }
 
             },
             function (error) {
