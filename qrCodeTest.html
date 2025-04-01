@@ -52,42 +52,94 @@
     let scanner = null;
     let isScanning = false;
 
-    document.getElementById("scanBtn").addEventListener("click", function () {
+    // document.getElementById("scanBtn").addEventListener("click", function () {
+    //     if (isScanning) return;
+    //     isScanning = true;
+    //     document.getElementById("scanBtn").style.display = "none";
+    //     document.getElementById("loading").style.display = "block";
+    //     document.getElementById("qr-reader").style.display = "block";
+    //
+    //     let qrBoxSize = window.innerWidth < 600 ? 200 : 250;
+    //
+    //     scanner = new Html5Qrcode("qr-reader");
+    //
+    //     scanner.start(
+    //         { facingMode: "environment" },
+    //         { fps: 10, qrbox: qrBoxSize },
+    //         function (decodedText) {
+    //             alert("扫描成功：" + decodedText);
+    //             stopScan();
+    //
+    //             // 检查扫描结果是否是 URL
+    //             if (isValidUrl(decodedText)) {
+    //                 window.location.href = decodedText; // 直接跳转
+    //             } else {
+    //                 alert("扫描成功：" + decodedText); // 非 URL 则显示结果
+    //             }
+    //
+    //         },
+    //         function (error) {
+    //             console.warn(error);
+    //         }
+    //     ).then(() => {
+    //         document.getElementById("loading").style.display = "none";
+    //     }).catch(err => {
+    //         alert("摄像头打开失败：" + err);
+    //         stopScan();
+    //     });
+    // });
+
+
+    document.getElementById("scanBtn").addEventListener("click", async function () {
         if (isScanning) return;
-        isScanning = true;
-        document.getElementById("scanBtn").style.display = "none";
-        document.getElementById("loading").style.display = "block";
-        document.getElementById("qr-reader").style.display = "block";
 
-        let qrBoxSize = window.innerWidth < 600 ? 200 : 250;
+        try {
+            isScanning = true;
+            document.getElementById("scanBtn").disabled = true;
+            document.getElementById("loading").style.display = "block";
 
-        scanner = new Html5Qrcode("qr-reader");
+            scanner = new Html5Qrcode("qr-reader");
 
-        scanner.start(
-            { facingMode: "environment" },
-            { fps: 10, qrbox: qrBoxSize },
-            function (decodedText) {
-                alert("扫描成功：" + decodedText);
-                stopScan();
+            await scanner.start(
+                { facingMode: "environment" },
+                {
+                    fps: 10,
+                    qrbox: qrBoxSize,
+                    supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA]
+                },
+                (decodedText) => {
+                    handleScanSuccess(decodedText);
+                },
+                (error) => {
+                    console.warn("扫描质量差:", error);
+                }
+            );
 
-                // // 检查扫描结果是否是 URL
-                // if (isValidUrl(decodedText)) {
-                //     window.location.href = decodedText; // 直接跳转
-                // } else {
-                //     alert("扫描成功：" + decodedText); // 非 URL 则显示结果
-                // }
-
-            },
-            function (error) {
-                console.warn(error);
-            }
-        ).then(() => {
             document.getElementById("loading").style.display = "none";
-        }).catch(err => {
-            alert("摄像头打开失败：" + err);
+            document.getElementById("qr-reader").style.display = "block";
+        } catch (err) {
+            alert("摄像头开启失败: " + err.message);
             stopScan();
-        });
+        }
     });
+
+    function handleScanSuccess(decodedText) {
+        stopScan();
+
+        // 示例：如果是设备ID，跳转到目标页
+        if (/^[a-zA-Z0-9_-]+$/.test(decodedText)) {
+            const targetUrl = `http://172.16.0.197:8086/NaNaWeb/CustomOpenWin/shebdj.html?device_id=${decodedText}`;
+            window.location.href = targetUrl;
+        }
+        // 如果是URL直接跳转
+        else if (isValidUrl(decodedText)) {
+            window.location.href = decodedText;
+        }
+        // 其他内容显示结果
+        else {
+            alert("扫描结果: " + decodedText);
+        }
+    }
 
     function stopScan() {
         if (scanner) {
