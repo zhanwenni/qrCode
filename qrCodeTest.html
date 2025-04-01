@@ -1,185 +1,325 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>扫一扫</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.2.1/html5-qrcode.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>二维码扫描工具</title>
+    <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/dist/html5-qrcode.min.js"></script>
     <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
         body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
             text-align: center;
-            font-family: Arial, sans-serif;
+        }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            font-size: 24px;
+            margin-bottom: 30px;
+            color: #4285f4;
         }
         #scanBtn {
+            display: inline-block;
             padding: 15px 30px;
             font-size: 18px;
             background-color: #4285f4;
             color: white;
             border: none;
-            border-radius: 8px;
+            border-radius: 50px;
             cursor: pointer;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-            margin-top: 50px;
+            box-shadow: 0 4px 15px rgba(66, 133, 244, 0.3);
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
         }
         #scanBtn:hover {
             background-color: #3367d6;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(66, 133, 244, 0.4);
         }
         #scanBtn:disabled {
             background-color: #cccccc;
             cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
         }
         #qr-reader {
             width: 100%;
-            max-width: 320px;
-            margin: auto;
+            max-width: 400px;
+            margin: 20px auto;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.1);
             display: none;
         }
         #loading {
             display: none;
             font-size: 16px;
-            color: gray;
-            margin-top: 10px;
+            color: #666;
+            margin: 20px 0;
+        }
+        #status {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 8px;
+            background-color: #f0f0f0;
+            display: none;
+        }
+        #result {
+            margin-top: 30px;
+            padding: 15px;
+            border-radius: 8px;
+            background-color: #e8f0fe;
+            display: none;
+        }
+        .instructions {
+            margin-top: 30px;
+            padding: 15px;
+            background-color: #fff;
+            border-radius: 12px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+            text-align: left;
+        }
+        .instructions h3 {
+            color: #4285f4;
+            margin-bottom: 10px;
+        }
+        .instructions ol {
+            padding-left: 20px;
+        }
+        .instructions li {
+            margin-bottom: 8px;
         }
     </style>
 </head>
 <body>
+<div class="container">
+    <h1>二维码扫描工具</h1>
 
-<button id="scanBtn">📷 点击扫码</button>
-<p id="loading">正在打开摄像头，请稍候...</p>
-<div id="qr-reader"></div>
+    <button id="scanBtn">📷 开始扫描</button>
+    <p id="loading">正在初始化摄像头...</p>
+    <div id="qr-reader"></div>
+
+    <div id="status">状态: <span id="statusText">准备就绪</span></div>
+    <div id="result">
+        <strong>扫描结果:</strong> <span id="resultText"></span>
+    </div>
+
+    <div class="instructions">
+        <h3>使用说明:</h3>
+        <ol>
+            <li>点击"开始扫描"按钮</li>
+            <li>允许浏览器访问摄像头</li>
+            <li>将二维码置于扫描框内</li>
+            <li>保持手机稳定直到识别成功</li>
+        </ol>
+    </div>
+</div>
 
 <script>
-    let scanner = null;
+    // 全局变量
+    let html5QrcodeScanner = null;
     let isScanning = false;
+    const scanBtn = document.getElementById("scanBtn");
+    const loading = document.getElementById("loading");
+    const qrReader = document.getElementById("qr-reader");
+    const statusText = document.getElementById("statusText");
+    const resultDiv = document.getElementById("result");
+    const resultText = document.getElementById("resultText");
 
-    // document.getElementById("scanBtn").addEventListener("click", function () {
-    //     if (isScanning) return;
-    //     isScanning = true;
-    //     document.getElementById("scanBtn").style.display = "none";
-    //     document.getElementById("loading").style.display = "block";
-    //     document.getElementById("qr-reader").style.display = "block";
-    //
-    //     let qrBoxSize = window.innerWidth < 600 ? 200 : 250;
-    //
-    //     scanner = new Html5Qrcode("qr-reader");
-    //
-    //     scanner.start(
-    //         { facingMode: "environment" },
-    //         { fps: 10, qrbox: qrBoxSize },
-    //         function (decodedText) {
-    //             alert("扫描成功：" + decodedText);
-    //             stopScan();
-    //
-    //             // 检查扫描结果是否是 URL
-    //             if (isValidUrl(decodedText)) {
-    //                 window.location.href = decodedText; // 直接跳转
-    //             } else {
-    //                 alert("扫描成功：" + decodedText); // 非 URL 则显示结果
-    //             }
-    //
-    //         },
-    //         function (error) {
-    //             console.warn(error);
-    //         }
-    //     ).then(() => {
-    //         document.getElementById("loading").style.display = "none";
-    //     }).catch(err => {
-    //         alert("摄像头打开失败：" + err);
-    //         stopScan();
-    //     });
-    // });
+    // 初始化函数
+    function initScanner() {
+        // 检查库是否加载成功
+        if (typeof Html5Qrcode === "undefined") {
+            updateStatus("错误: 二维码库加载失败", "error");
+            scanBtn.disabled = true;
+            return;
+        }
 
+        updateStatus("准备就绪");
+        scanBtn.disabled = false;
+    }
 
-    document.getElementById("scanBtn").addEventListener("click", async function () {
+    // 更新状态显示
+    function updateStatus(text, type = "info") {
+        const statusDiv = document.getElementById("status");
+        statusDiv.style.display = "block";
+        statusText.textContent = text;
+
+        // 根据类型设置颜色
+        statusDiv.style.backgroundColor =
+            type === "error" ? "#ffebee" :
+                type === "success" ? "#e8f5e9" : "#f0f0f0";
+        statusText.style.color =
+            type === "error" ? "#f44336" :
+                type === "success" ? "#4caf50" : "#333";
+    }
+
+    // 显示扫描结果
+    function showResult(text) {
+        resultDiv.style.display = "block";
+        resultText.textContent = text;
+    }
+
+    // 开始扫描
+    async function startScan() {
         if (isScanning) return;
 
         try {
             isScanning = true;
-            document.getElementById("scanBtn").disabled = true;
-            document.getElementById("loading").style.display = "block";
+            scanBtn.disabled = true;
+            loading.style.display = "block";
+            updateStatus("正在初始化摄像头...");
 
-            scanner = new Html5Qrcode("qr-reader");
+            // 创建扫描器实例
+            html5QrcodeScanner = new Html5Qrcode("qr-reader");
 
-            await scanner.start(
-                { facingMode: "environment" },
-                {
-                    fps: 10,
-                    qrbox: qrBoxSize,
-                    supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA]
+            // 配置选项
+            const config = {
+                fps: 15, // 帧率
+                qrbox: { width: 250, height: 250 }, // 扫描框大小
+                aspectRatio: 1.0, // 宽高比
+                disableFlip: false, // 允许图像翻转
+                focusMode: "continuous", // 持续对焦
+                exposureMode: "continuous" // 持续曝光
+            };
+
+            // 启动扫描
+            await html5QrcodeScanner.start(
+                { facingMode: "environment" }, // 使用后置摄像头
+                config,
+                (decodedText, decodedResult) => {
+                    handleScanSuccess(decodedText, decodedResult);
                 },
-                (decodedText) => {
-                    handleScanSuccess(decodedText);
-                },
-                (error) => {
-                    console.warn("扫描质量差:", error);
+                (errorMessage, error) => {
+                    handleScanError(errorMessage, error);
                 }
             );
 
-            document.getElementById("loading").style.display = "none";
-            document.getElementById("qr-reader").style.display = "block";
-        } catch (err) {
-            alert("摄像头开启失败: " + err.message);
-            stopScan();
-        }
-    });
+            loading.style.display = "none";
+            qrReader.style.display = "block";
+            updateStatus("正在扫描...", "info");
 
-    function handleScanSuccess(decodedText) {
+        } catch (error) {
+            handleInitError(error);
+        }
+    }
+
+    // 处理扫描成功
+    function handleScanSuccess(decodedText, decodedResult) {
+        console.log("扫描成功:", decodedText, decodedResult);
+        updateStatus("扫描成功!", "success");
+        showResult(decodedText);
+
+        // 停止扫描
         stopScan();
 
-        // 示例：如果是设备ID，跳转到目标页
-        if (/^[a-zA-Z0-9_-]+$/.test(decodedText)) {
-            const targetUrl = `http://172.16.0.197:8086/NaNaWeb/CustomOpenWin/shebdj.html?device_id=${decodedText}`;
-            window.location.href = targetUrl;
-        }
-        // 如果是URL直接跳转
-        else if (isValidUrl(decodedText)) {
-            window.location.href = decodedText;
-        }
-        // 其他内容显示结果
-        else {
-            alert("扫描结果: " + decodedText);
+        // 处理扫描结果
+        processScannedData(decodedText);
+    }
+
+    // 处理扫描错误
+    function handleScanError(errorMessage, error) {
+        console.warn(`扫描错误: ${errorMessage}`, error);
+
+        // 忽略"未找到二维码"的常规错误
+        if (!errorMessage.includes("No QR code found")) {
+            updateStatus(`扫描错误: ${errorMessage}`, "error");
         }
     }
 
-    function stopScan() {
-        if (scanner) {
-            scanner.stop().then(() => {
-                scanner.clear();
+    // 处理初始化错误
+    function handleInitError(error) {
+        console.error("初始化错误:", error);
+        isScanning = false;
+        scanBtn.disabled = false;
+        loading.style.display = "none";
+
+        let errorMessage = "摄像头初始化失败";
+        if (error.message.includes("Permission denied")) {
+            errorMessage = "摄像头权限被拒绝，请允许访问";
+        } else if (error.message.includes("No camera found")) {
+            errorMessage = "未找到可用摄像头";
+        }
+
+        updateStatus(errorMessage, "error");
+        alert(errorMessage);
+    }
+
+    // 停止扫描
+    async function stopScan() {
+        if (html5QrcodeScanner && isScanning) {
+            try {
+                await html5QrcodeScanner.stop();
+                html5QrcodeScanner.clear();
+                console.log("扫描已停止");
+            } catch (error) {
+                console.error("停止扫描时出错:", error);
+            } finally {
                 resetUI();
-            }).catch(err => {
-                console.error("停止扫描失败:", err);
-                resetUI();
-            });
-        } else {
-            resetUI();
+            }
         }
     }
 
+    // 重置UI
     function resetUI() {
         isScanning = false;
-        document.getElementById("scanBtn").style.display = "block";
-        document.getElementById("qr-reader").style.display = "none";
-        document.getElementById("loading").style.display = "none";
+        scanBtn.disabled = false;
+        qrReader.style.display = "none";
+        loading.style.display = "none";
     }
 
-    // 检查字符串是否是有效的 URL
+    // 处理扫描到的数据
+    function processScannedData(data) {
+        // 检查是否是URL
+        if (isValidUrl(data)) {
+            updateStatus("检测到URL，即将跳转...", "success");
+            setTimeout(() => {
+                window.location.href = data;
+            }, 1500);
+            return;
+        }
+
+        // 检查是否是设备ID（根据您的需求自定义）
+        if (/^[a-zA-Z0-9_-]{4,}$/.test(data)) {
+            updateStatus("检测到设备ID", "success");
+            const targetUrl = `http://172.16.0.197:8086/NaNaWeb/CustomOpenWin/shebdj.html?device_id=${encodeURIComponent(data)}`;
+            setTimeout(() => {
+                window.location.href = targetUrl;
+            }, 1500);
+            return;
+        }
+
+        // 其他内容
+        updateStatus("扫描完成", "success");
+        alert(`扫描结果: ${data}`);
+    }
+
+    // 验证URL
     function isValidUrl(string) {
         try {
-            new URL(string); // 尝试解析 URL
+            new URL(string);
             return true;
         } catch (_) {
             return false;
         }
     }
 
-    window.onload = function () {
-        if (typeof Html5Qrcode === "undefined") {
-            alert("二维码扫描库加载失败，请检查网络或刷新页面！");
-            return;
-        }
-        scanBtn.click();  // 模拟点击按钮
-    };
-</script>
+    // 事件监听
+    scanBtn.addEventListener("click", startScan);
 
+    // 页面加载
+    window.addEventListener("load", initScanner);
+</script>
 </body>
 </html>
